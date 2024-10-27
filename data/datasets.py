@@ -108,7 +108,7 @@ if __name__ == "__main__":
     test_dataset = SharedTransformFloodDataset(image_dir,label_dir,shared_transform=shared_transforms)
     
 
-    test_dataloader = DataLoader(test_dataset,batch_size=10,shuffle=False,num_workers=8,pin_memory=True)
+    test_dataloader = DataLoader(test_dataset,batch_size=10,shuffle=False,num_workers=5,pin_memory=True)#Pin_memory makes transfering to
     start_time = time.time()
     imgs, labels = next(iter(test_dataloader))
     end_time = time.time()
