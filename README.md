@@ -30,6 +30,8 @@ thinks the dataset is a zipbomb.
 
 - Look into using a multi-processing Array to speed up the DataSet by taking the data from memory after the first epoch
 
-- Modify dataset to have channels first notation
+- Modify dataset to have channels first notation 
+
+- Build training loop and leave running over night
 
 

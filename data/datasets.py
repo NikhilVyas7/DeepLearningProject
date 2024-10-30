@@ -71,11 +71,13 @@ class FloodDataset(Dataset):
             loaded_image = self.shared_array_images[idx]
 
         #Resize label to have a color channel
-        loaded_label = loaded_label[...,np.newaxis]
+        #loaded_image = np.transpose(loaded_image,(0,2,1))
+        #Define custom collate function for this i guess
         if self.transform:
             loaded_image = self.transform(loaded_image)
         if self.target_transform:
             loaded_label = self.target_transform(loaded_label)
+            
         return loaded_image, loaded_label
 
 class SharedTransformFloodDataset(FloodDataset):
@@ -100,12 +102,15 @@ if __name__ == "__main__":
 
 
 
-    shared_transforms = transforms.Compose([
+    img_transforms = transforms.Compose([
         transforms.ToTensor()
+    ])
+    label_transforms = transforms.Compose([
+        torch.from_numpy
     ])
     image_dir = "/home/hice1/athalanki3/scratch/DeepLearningProject/FloodNet/FloodNet-Supervised_v1.0/test/test-org-img"
     label_dir = "/home/hice1/athalanki3/scratch/DeepLearningProject/FloodNet/FloodNet-Supervised_v1.0/test/test-label-img"
-    test_dataset = SharedTransformFloodDataset(image_dir,label_dir,shared_transform=shared_transforms)
+    test_dataset = SharedTransformFloodDataset(image_dir,label_dir,transform=img_transforms,target_transform=label_transforms)
     
 
     test_dataloader = DataLoader(test_dataset,batch_size=10,shuffle=False,num_workers=5,pin_memory=True)#Pin_memory makes transfering to
@@ -116,7 +121,7 @@ if __name__ == "__main__":
     print(imgs.shape)
     print(labels.shape)
     print(f"Time: {end_time - start_time}")
-
+    exit()
     print("Using cache....")
     test_dataloader.dataset.set_use_cache(True)
 

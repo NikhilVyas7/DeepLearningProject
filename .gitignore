@@ -3,3 +3,4 @@ FloodNet
 checkpoints/*
 *.out
 *.err
+*.pyc

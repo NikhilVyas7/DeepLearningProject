@@ -33,6 +33,7 @@ class Expand(nn.Module):
         diffY = copy.size()[2] -  x.size()[2]
         diffX = copy.size()[3] -  x.size()[3]
         x = F.pad(x,(diffX //2, diffX - diffX //2, diffY //2, diffY - diffY //2))
+        #Padding x up to copy size instead of bringing it down
         x = torch.cat((x,copy),dim=1)#Concatenate by channels
 
         x = self.relu(self.conv1(x))
@@ -94,4 +95,5 @@ if __name__ == "__main__":
     model = UNet().to(device)
     #model = nn.DataParallel(model,device_ids=[0,1])
     print("Thru model..")
-    model.forward(sample_input)
+    out = model.forward(sample_input)
+    print(out.shape)
