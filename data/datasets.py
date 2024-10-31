@@ -40,6 +40,8 @@ class FloodDataset(Dataset):
         shared_array_labels = np.ctypeslib.as_array(self.shared_array_base_labels.get_obj())
         self.shared_array_labels = shared_array_labels.reshape(len(self.images),4000,3000)
 
+        #Allocating the cache for all the individuals is likely really expensive
+
     def __len__(self):
         return len(self.images)
         
