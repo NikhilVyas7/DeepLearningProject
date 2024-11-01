@@ -1,6 +1,7 @@
+pillow
+matplotlib
+opencv-python
+--index-url https://download.pytorch.org/whl/cu121
 torch
 torchvision
 torchmetrics
---index-url https://download.pytorch.org/whl/cu121
-pillow
-matplotlib

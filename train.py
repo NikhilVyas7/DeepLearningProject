@@ -11,7 +11,7 @@ print("Starting...")
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
+print(f"Using {device}")
 batch_size = 1
 #GPU's really don't have enough memory, should try using portions of the image and label.
 #Takes a lot of memory, especially for the backward pass. Should definetly try shrinking the images
@@ -25,6 +25,7 @@ model_name = "UNetCustom"
 
 #Use DataParallel if more than one device
 if device == "cuda" and (torch.cuda.device_count() > 1):
+    print(f"Using {torch.cuda.device_count()} gpus")
     model = torch.nn.DataParallel(model)
     batch_size *= torch.cuda.device_count()
 
@@ -95,7 +96,7 @@ for epoch in range(num_epochs):
             writer.writerow([epoch + 1, batch_idx + 1, loss.item(), mIoU.item()])
 
     #Save model checkpoint after each batch of training
-    torch.save(model,f"checkpoints/{model_name}_{epoch}.pt")    
+    torch.save(model.state_dict(),f"checkpoints/{model_name}_{epoch}.pt")    
 
     #Test
     model.eval()

@@ -35,7 +35,9 @@ thinks the dataset is a zipbomb.
 - Explore training on patches of images, that way are batches can be greater than 1. We would want to train on patches of 
   different sizes, but each batch would have to have patches of the same size
 
--Explore DataDistributedParallel so we can use more than 2 gpus.
+- Explore DataDistributedParallel so we can use more than 2 gpus.
+
+- Make sure output of model and Dataloader output look to be as expected
 
 
 
