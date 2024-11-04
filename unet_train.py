@@ -16,8 +16,8 @@ batch_size = 1
 #GPU's really don't have enough memory, should try using portions of the image and label.
 #Takes a lot of memory, especially for the backward pass. Should definetly try shrinking the images
 
-learning_rate = 1e-3 #Switch to use learning rate scheduler eventually
-num_epochs = 20
+learning_rate = 5e-4 #Switch to use learning rate scheduler eventually, maybe tobig to be honest
+num_epochs = 60 #Because we can afford it now, its relatively fast
 num_classes = 10
 model_name = "CustomUNet"
 h,w = 1024, 768
@@ -110,8 +110,9 @@ for epoch in range(num_epochs):
             writer = csv.writer(file)
             writer.writerow([epoch + 1, batch_idx + 1, loss.item(), mIoU.item()])
 
-    #Save model checkpoint after each batch of training
-    torch.save(model.state_dict(),f"checkpoints/{model_name}_{epoch}.pt")    
+    #Save model checkpoint after 5 epochs of training
+    if (epoch % 5 == 0):
+        torch.save(model.state_dict(),f"checkpoints/{model_name}_{epoch}.pt")    
 
     #Test
     model.eval()
