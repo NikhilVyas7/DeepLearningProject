@@ -20,6 +20,10 @@ dataset is located in the repo with the name `FloodNet`. To unzip, run
 `UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE unzip FloodNet.zip -d FloodNet`. The unzip disable zipbomb is required because the unzip function falsely
 thinks the dataset is a zipbomb.
 
+### Shrink Dataset
+
+Once in a compute node with a lot of cores and memory,and in the conda environment, simply run `python data/shrink_dataset.py FloodNet ShrunkenFloodNet`. This will very quickly create the shrunken dataset.
+
 
 ## Task List
 

@@ -91,7 +91,7 @@ class UNet(nn.Module):
 if __name__ == "__main__":
     print("Testing model...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    sample_input = torch.randn((2,3,4000,3000)).to(device)
+    sample_input = torch.randn((2,3,1000,750)).to(device) #Literally 16 times smaller, so can probably do batch sizes of 16
     model = UNet().to(device)
     #model = nn.DataParallel(model,device_ids=[0,1])
     print("Thru model..")

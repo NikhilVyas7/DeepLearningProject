@@ -12,8 +12,8 @@ from PIL import Image
 class FloodDataset(Dataset):
     #This class is the generic FloodDataset with seperate transforms for image and label
     #Cacheing before transforms for now
-    def __init__(self,image_dir,label_dir,transform=None,target_transform=None):
-        
+    def __init__(self,image_dir,label_dir,h,w,transform=None,target_transform=None):
+        self.h, self. w =h,w
         self.image_dir = image_dir
         self.label_dir = label_dir
 
@@ -31,14 +31,14 @@ class FloodDataset(Dataset):
         self.target_transform = target_transform
         self.use_cache = False
         #Set up cache for images
-        self.shared_array_base_images = mp.Array(ctypes.c_uint8, len(self.images) * 3 * 4000 * 3000)
+        self.shared_array_base_images = mp.Array(ctypes.c_uint8, len(self.images) * 3 * h * w)
         shared_array_images = np.ctypeslib.as_array(self.shared_array_base_images.get_obj())
-        self.shared_array_images =shared_array_images.reshape(len(self.images),4000,3000,3)
+        self.shared_array_images =shared_array_images.reshape(len(self.images),h,w,3)
 
         #Set up cache for labels
-        self.shared_array_base_labels = mp.Array(ctypes.c_uint8, len(self.images) * 4000 * 3000)
+        self.shared_array_base_labels = mp.Array(ctypes.c_uint8, len(self.images) * h * w)
         shared_array_labels = np.ctypeslib.as_array(self.shared_array_base_labels.get_obj())
-        self.shared_array_labels = shared_array_labels.reshape(len(self.images),4000,3000)
+        self.shared_array_labels = shared_array_labels.reshape(len(self.images),h,w)
 
         #Allocating the cache for all the individuals is likely really expensive
 
@@ -59,11 +59,10 @@ class FloodDataset(Dataset):
             loaded_image = cv2.imread(image_path)
             #Switch color channels
             loaded_image = cv2.cvtColor(loaded_image,cv2.COLOR_BGR2RGB)
-            loaded_image = cv2.resize(loaded_image, (3000,4000))
-
+            loaded_image = cv2.resize(loaded_image, (self.w,self.h))
             loaded_label = cv2.imread(label_path,cv2.IMREAD_GRAYSCALE)
             
-            loaded_label = cv2.resize(loaded_label, (3000,4000), interpolation=cv2.INTER_NEAREST) #Because labels must be specific values
+            loaded_label = cv2.resize(loaded_label, (self.w,self.h), interpolation=cv2.INTER_NEAREST) #Because labels must be specific values
 
             #Store label and image into cache
             self.shared_array_images[idx] = loaded_image
@@ -85,8 +84,8 @@ class FloodDataset(Dataset):
 class SharedTransformFloodDataset(FloodDataset):
     #This class has another parameter, shared_transforms, which are applied between the image and the label, and applied
     #after other transforms
-    def __init__(self,image_dir,label_dir,transform=None,target_transform=None,shared_transform=None):
-        super(SharedTransformFloodDataset,self).__init__(image_dir,label_dir,transform,target_transform)
+    def __init__(self,image_dir,label_dir,h,w,transform=None,target_transform=None,shared_transform=None):
+        super(SharedTransformFloodDataset,self).__init__(image_dir,label_dir,h,w,transform=transform,target_transform=target_transform)
         self.shared_transform = shared_transform
     def __getitem__(self,idx):
         image, label = super(SharedTransformFloodDataset,self).__getitem__(idx)

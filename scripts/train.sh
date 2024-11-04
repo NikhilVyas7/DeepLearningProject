@@ -7,6 +7,6 @@
 # Load any necessary modules
 module load anaconda3
 conda info --envs #For some reason this makes it work, wtf
-conda activate dl_project
+
 # Run your command or script
-python train.py
+conda run -n dl_project python unet_train.py
