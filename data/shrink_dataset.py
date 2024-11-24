@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 def resize_image(file_path, new_path, interpolation):
     """
-    Resize the image to (1000, 750) using the specified interpolation.
+    Resize the image to (1024, 768) using the specified interpolation.
     """
     # Read the image
     image = cv2.imread(file_path)
