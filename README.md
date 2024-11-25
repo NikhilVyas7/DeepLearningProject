@@ -28,21 +28,14 @@ Once in a compute node with a lot of cores and memory,and in the conda environme
 ## Task List
 
 
-- Create script to downsize images along with labels from 4000,3000 to a smaller a size, say 1000,750. Make sure to use
-    nearest_neighbour for downsizing label so that the values are the same inside.
-
--Create a python script that can process the running_metrics csv file into graphs for our UNet baseline. Try to group
-    by epoch so that we can see the graph of it per epoch.
-
 - Create script to convert label image containign (1s,2s.) etc to something that can be visualized with colors ,according to `FloodNet/ColorMasks-FloodNetv1.0/ColorPalette-Values.xlsx`.
-
-- Explore training on patches of images, that way are batches can be greater than 1. We would want to train on patches of 
-  different sizes, but each batch would have to have patches of the same size
-
 - Explore DataDistributedParallel so we can use more than 2 gpus.
 
-- Make sure output of model and Dataloader output look to be as expected
+- Explore using Diffusion or GAN models to create the images from the labels
 
+- Explore HPO (Hyper-parameter Optimization) on the UNet to improve baseline performance
+
+- Explore methods of optimizing the model inference time in general
 
 
 
