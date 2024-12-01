@@ -5,12 +5,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import csv
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from torchvision import transforms, models
 from torchvision.models import resnet50, ResNet50_Weights
-from torchvision.models.segmentation.deeplabv3 import DeepLabHead
-from PIL import Image
-from tqdm import tqdm
 from torchmetrics.classification import JaccardIndex
 from data.datasets import SharedTransformFloodDataset
 
@@ -18,37 +15,31 @@ from data.datasets import SharedTransformFloodDataset
 input_size = (1024, 768)
 h, w = input_size
 batch_size = 1
-epochs = 50
+epochs = 20
 learning_rate = 0.0001
 model_name = "DeepLabV3"
 num_classes = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Data transformations
-transform = transforms.Compose([
-    transforms.Resize(input_size),
-    transforms.ToTensor()
-])
-
-#Create metrics file
-# Define the file name and write the header
-train_metrics_path = f'running_metrics/training_metrics_{model_name}.csv'
-test_metrics_path = f'running_metrics/test_metrics_{model_name}.csv'
-
-with open(train_metrics_path, mode='w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['Epoch', 'Batch', 'Loss', 'mIoU'])  # Header
-with open(test_metrics_path, mode='w', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(['Epoch', 'Batch', 'Loss', 'mIoU']) 
-
-
 img_transforms = transforms.Compose([
-        transforms.ToTensor()
+    transforms.ToTensor()
 ])
 label_transforms = transforms.Compose([
     torch.from_numpy
 ])
+
+# Metrics paths
+train_metrics_path = f'running_metrics/training_metrics_{model_name}.csv'
+test_metrics_path = f'running_metrics/test_metrics_{model_name}.csv'
+
+# Initialize metrics files
+with open(train_metrics_path, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Epoch', 'Batch', 'Loss', 'mIoU'])
+with open(test_metrics_path, mode='w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(['Epoch', 'Batch', 'Loss', 'mIoU'])
 
 # Paths to FloodNet dataset
 train_image_dir = "ShrunkenFloodNet/FloodNet-Supervised_v1.0/train/train-org-img"
@@ -57,12 +48,12 @@ val_image_dir = "ShrunkenFloodNet/FloodNet-Supervised_v1.0/val/val-org-img"
 val_mask_dir = "ShrunkenFloodNet/FloodNet-Supervised_v1.0/val/val-label-img"
 
 # Datasets and DataLoaders
-train_dataset = SharedTransformFloodDataset(train_image_dir,train_mask_dir,h,w,transform=img_transforms,target_transform=label_transforms)
-val_dataset = SharedTransformFloodDataset(val_image_dir,val_mask_dir,h,w,transform=img_transforms,target_transform=label_transforms)
+train_dataset = SharedTransformFloodDataset(train_image_dir, train_mask_dir, h, w,
+                                            transform=img_transforms, target_transform=label_transforms)
+val_dataset = SharedTransformFloodDataset(val_image_dir, val_mask_dir, h, w,
+                                          transform=img_transforms, target_transform=label_transforms)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-print(train_loader)
 
 class ASPP(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -163,75 +154,58 @@ class DeepLabV3Plus(nn.Module):
         # Upsample to match the input image size
         return F.interpolate(x, size=(h, w), mode='bilinear', align_corners=True)
 
-# Set up the model and print the summary
-model = DeepLabV3Plus(num_classes=num_classes)
-model = model.to("cuda" if torch.cuda.is_available() else "cpu")
+# Instantiate the model
+model = DeepLabV3Plus(num_classes=num_classes).to(device)
 
 # Loss function and optimizer
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.5)
 jaccard_metric = JaccardIndex(num_classes=num_classes, task="multiclass").to(device)
 
+# Training and validation loops
 for epoch in range(epochs):
     print(f"Epoch: {epoch + 1}")
     
-    # Training Loop
+    # Training
     model.train()
     train_loss = 0.0
     for batch_idx, (images, masks) in enumerate(train_loader):
-        images, masks = images.to(device), masks.to(device)
-        masks = masks.long()
-
-        # Forward pass
+        images, masks = images.to(device), masks.to(device).long()
         outputs = model(images)
         loss = criterion(outputs, masks)
-
-        # Backward pass and optimization
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        train_loss += loss.item() * images.size(0)
-
-        # Calculate mIoU
+        
+        # Save metrics
         preds = torch.argmax(outputs, dim=1)
-        mIoU = jaccard_metric(preds, masks.int())
-
-        #Save Metrics
+        mIoU = jaccard_metric(preds, masks)
         with open(train_metrics_path, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow([epoch + 1, batch_idx + 1, loss.item(), mIoU.item()])
-
-    # Validation Loop with IoU calculation
+    
+    # Validation
     model.eval()
     val_loss = 0.0
     total_iou = 0.0
     with torch.no_grad():
         for batch_idx, (images, masks) in enumerate(val_loader):
-            images, masks = images.to(device), masks.to(device)
-            masks = masks.long()
-
-            # Generate predictions
+            images, masks = images.to(device), masks.to(device).long()
             outputs = model(images)
-
-            # Calculate Loss
             loss = criterion(outputs, masks)
-            val_loss += loss.item() * images.size(0)
-
-            # Calculate mIoU
+            val_loss += loss.item()
+            
+            # Save IoU metrics
             preds = torch.argmax(outputs, dim=1)
-            mIoU = jaccard_metric(preds, masks.int())
-            total_iou += mIoU
-
-            # Save IoU and Loss metrics to CSV
+            mIoU = jaccard_metric(preds, masks)
+            total_iou += mIoU.item()
             with open(test_metrics_path, mode='a', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, batch_idx + 1, loss.item(), mIoU.item()])
-
-    # Reset metrics and log average loss/IoU for the epoch
-    jaccard_metric.reset()
-    val_loss /= len(val_loader.dataset)
-    mean_iou = total_iou / len(val_loader)
-    print(f"Validation Loss: {val_loss:.4f}, Mean IoU: {mean_iou:.4f}")
+    
+    # Adjust learning rate
+    scheduler.step(val_loss)
+    print(f"Validation Loss: {val_loss:.4f}, Mean IoU: {total_iou / len(val_loader):.4f}")
 
 print("Training complete.")
