@@ -19,7 +19,7 @@ def objective(trial):
     batch_size = 1
     optimizer_type = trial.suggest_categorical("optimizer", ["Adam", "SGD"])
     num_classes = 10
-    model_name = "Unet"
+    model_name = "CustomUNet"
     h, w = 1024, 768
 
     device = "cuda" if torch.cuda.is_available() else "cpu"

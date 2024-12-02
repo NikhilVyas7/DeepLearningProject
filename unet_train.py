@@ -14,7 +14,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using {device}")
 batch_size = 1
 learning_rate = 0.0001384492940061904
-num_epochs = 20
+num_epochs = 50
 num_classes = 10
 model_name = "CustomUNet"
 h, w = 1024, 768
@@ -39,9 +39,10 @@ if device == "cuda" and (torch.cuda.device_count() > 1):
     model = torch.nn.DataParallel(model)
     batch_size *= torch.cuda.device_count()
 
-# Loss, Optimizer, and Metrics
+# Loss, Optimizer, Scheduler, and Metrics
 loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 jaccard_metric = JaccardIndex(num_classes=num_classes, average="macro", task="multiclass").to(device)
 
 # Transforms
@@ -96,11 +97,13 @@ for epoch in range(num_epochs):
 
     # Validation Phase
     model.eval()
+    val_loss = 0
     with torch.no_grad():
         for batch_idx, (images, labels) in enumerate(val_dataloader):
             images, labels = images.to(device), labels.to(device).long()
             preds = model(images)
             loss = loss_fn(preds, labels)
+            val_loss += loss.item()
             test_mIoU = jaccard_metric(preds.argmax(dim=1), labels)
             print(f"Test: Epoch: {epoch + 1}, Batch: {batch_idx + 1}, Loss: {loss.item()}, mIoU: {test_mIoU.item()}")
 
@@ -108,5 +111,10 @@ for epoch in range(num_epochs):
             with open(test_metrics_path, mode='a', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow([epoch + 1, batch_idx + 1, loss.item(), test_mIoU.item()])
+
+    # Adjust Learning Rate
+    val_loss /= len(val_dataloader)  # Average validation loss
+    scheduler.step(val_loss)
+    print(f"Epoch {epoch + 1} completed. Avg Val Loss: {val_loss:.4f}")
 
 print("Training Complete.")
