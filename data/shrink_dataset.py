@@ -15,7 +15,7 @@ def resize_image(file_path, new_path, interpolation):
         return
     
     # Resize the image
-    resized_image = cv2.resize(image, (1024, 768), interpolation=interpolation)
+    resized_image = cv2.resize(image, (512, 512), interpolation=interpolation)
     
     # Determine the new file path
     relative_path = os.path.relpath(file_path, args.original_data_path)
