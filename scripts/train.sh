@@ -9,4 +9,5 @@ module load anaconda3
 conda info --envs #For some reason this makes it work, wtf
 
 # Run your command or script
-conda run -n dl_project python unet_train.py
+
+conda run -n dl_project python diffusion_train.py

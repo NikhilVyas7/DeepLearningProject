@@ -81,6 +81,49 @@ class FloodDataset(Dataset):
             
         return loaded_image, loaded_label
 
+
+class GenerateDataset(FloodDataset):
+    def __init__(self,image_dir,label_dir,h,w,palette,transform=None,target_transform=None):
+        super(GenerateDataset,self).__init__(image_dir,label_dir,h,w,transform=transform,target_transform=target_transform)
+        self.palette = palette
+        self.transform = transform
+    def  __getitem__(self,idx):
+        image, label = super(GenerateDataset,self).__getitem__(idx)
+        seg_map = self.convert_label_to_color(label)
+        return seg_map, image
+
+    def convert_label_to_color(self,label_img):
+        color_seg = np.zeros((self.h,self.w,3))
+        for i, color in enumerate(self.palette):
+            color_seg[label_img == i,:] = color #label_img here only has 2 channels
+        color_seg = np.uint8(color_seg)
+        color_seg = self.transform(color_seg)
+        return color_seg
+
+
+class HuggingFaceDataset(FloodDataset):
+    def __init__(self,image_dir,label_dir,h,w,palette,transform=None,target_transform=None):
+        super(HuggingFaceDataset,self).__init__(image_dir,label_dir,h,w,transform=transform,target_transform=target_transform)
+        self.palette = palette
+        self.transform = transform
+    def  __getitem__(self,idx):
+        image, label = super(HuggingFaceDataset,self).__getitem__(idx)
+        seg_map = self.convert_label_to_color(label)
+        return_dict = {}
+        return_dict["pixel_values"] = image
+        return_dict["conditioning_pixel_values"] = seg_map
+        return_dict["input_ids"] = torch.tensor([49406, 49407])
+        return return_dict
+
+    def convert_label_to_color(self,label_img):
+        color_seg = np.zeros((self.h,self.w,3))
+        for i, color in enumerate(self.palette):
+            color_seg[label_img == i,:] = color #label_img here only has 2 channels
+        color_seg = np.uint8(color_seg)
+        color_seg = self.transform(color_seg)
+        return color_seg
+
+    
 class SharedTransformFloodDataset(FloodDataset):
     #This class has another parameter, shared_transforms, which are applied between the image and the label, and applied
     #after other transforms
