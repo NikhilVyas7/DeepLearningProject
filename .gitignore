@@ -1,6 +1,7 @@
 FloodNet.zip
 FloodNet
 ShrunkenFloodNet
+GenerateFloodNet
 checkpoints/*
 *.out
 *.err
